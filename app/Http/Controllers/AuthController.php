@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    private function jsonResponse($data = null, $message = null, $statusCode = 200)
+    {
+        return response()->json([
+            'success' => $statusCode >= 200 && $statusCode < 300,
+            'message' => $message,
+            'data' => $data
+        ], $statusCode);
+    }
+
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -23,7 +32,7 @@ class AuthController extends Controller
             'password' => Hash::make($validatedData['password']),
         ]);
 
-        return response()->json(['user' => $user]);
+        return $this->jsonResponse(['user' => $user], 'User registered successfully', 201);
     }
 
     public function login(Request $request)
@@ -35,9 +44,9 @@ class AuthController extends Controller
             $role = $user->role;
 
             $accessToken = $user->createToken('authToken')->accessToken;
-            return response()->json(['data' => $user, 'role' => $role, 'access_token' => $accessToken]);
+            return $this->jsonResponse(['user' => $user, 'role' => $role, 'access_token' => $accessToken], 'Login successful');
         } else {
-            return response()->json(['message' => 'Unauthorized'], 401);
+            return $this->jsonResponse(null, 'Unauthorized', 401);
         }
     }
 }

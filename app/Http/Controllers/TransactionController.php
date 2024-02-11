@@ -8,18 +8,27 @@ use App\Models\TransactionItem;
 
 class TransactionController extends Controller
 {
+    private function jsonResponse($data, $message = null, $statusCode = 200)
+    {
+        return response()->json([
+            'success' => $statusCode >= 200 && $statusCode < 300,
+            'message' => $message,
+            'data' => $data
+        ], $statusCode);
+    }
+
     public function getTransactions(Request $request)
     {
         $userId = $request->userId;
 
         $transactions = Transaction::where('user_id', $userId)->get();
-        return response()->json(['transactions' => $transactions], 200);
+        return $this->jsonResponse(['transactions' => $transactions]);
     }
 
     public function getAllTransactions()
     {
         $transactions = Transaction::all();
-        return response()->json(['transactions' => $transactions], 200);
+        return $this->jsonResponse(['transactions' => $transactions]);
     }
 
     public function deleteTransaction($transactionId)
@@ -34,7 +43,7 @@ class TransactionController extends Controller
             $transactionItem->delete();
         }
 
-        return response()->json(['message' => 'Transaction and transaction items deleted successfully'], 200);
+        return $this->jsonResponse(null, 'Transaction and transaction items deleted successfully');
     }
 
     public function transactionDetail($transactionId)
@@ -44,7 +53,7 @@ class TransactionController extends Controller
             ->get();
 
         if ($transactionItems->isEmpty()) {
-            return response()->json(['message' => 'Transaction items not found'], 404);
+            return $this->jsonResponse(null, 'Transaction items not found', 404);
         }
 
         $transactionItems = $transactionItems->map(function ($item) {
@@ -55,7 +64,7 @@ class TransactionController extends Controller
             ];
         });
 
-        return response()->json(['transaction_items' => $transactionItems], 200);
+        return $this->jsonResponse(['transaction_items' => $transactionItems]);
     }
 
     public function cancelTransaction($transactionId)
@@ -63,14 +72,14 @@ class TransactionController extends Controller
         $transaction = Transaction::find($transactionId);
 
         if (!$transaction) {
-            return response()->json(['message' => 'Transaction not found'], 404);
+            return $this->jsonResponse(null, 'Transaction not found', 404);
         }
 
         $transaction->status = 'cancelled';
         $transaction->cancelled = true;
         $transaction->save();
 
-        return response()->json(['message' => 'Transaction cancelled successfully'], 200);
+        return $this->jsonResponse(null, 'Transaction cancelled successfully');
     }
 
     public function updateStatus(Request $request, $transactionId)
@@ -78,7 +87,7 @@ class TransactionController extends Controller
         $transaction = Transaction::find($transactionId);
 
         if (!$transaction) {
-            return response()->json(['message' => 'Transaction not found'], 404);
+            return $this->jsonResponse(null, 'Transaction not found', 404);
         }
 
         $request->validate([
@@ -88,7 +97,7 @@ class TransactionController extends Controller
         $transaction->status = $request->status;
         $transaction->save();
 
-        return response()->json(['message' => 'Transaction status updated successfully'], 200);
+        return $this->jsonResponse(null, 'Transaction status updated successfully');
     }
 
     public function checkout(Request $request)
@@ -118,9 +127,9 @@ class TransactionController extends Controller
                 $transactionItem->save();
             }
 
-            return response()->json(['message' => 'Checkout successful'], 200);
+            return $this->jsonResponse(['transaction_id' => $transaction->id], 'Checkout successful');
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Checkout failed', 'error' => $e->getMessage()], 500);
+            return $this->jsonResponse(null, 'Checkout failed', 500);
         }
     }
 }

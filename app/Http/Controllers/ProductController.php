@@ -5,16 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Http\File;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    /**
-     * Fetch all products.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
+    private function jsonResponse($data, $message = null, $statusCode = 200)
+    {
+        return response()->json([
+            'success' => $statusCode >= 200 && $statusCode < 300,
+            'message' => $message,
+            'data' => $data
+        ], $statusCode);
+    }
+
     public function index()
     {
         try {
@@ -22,9 +24,9 @@ class ProductController extends Controller
             foreach ($products as $product) {
                 $product->image = asset('images/' . $product->image);
             }
-            return response()->json(['products' => $products], 200);
+            return $this->jsonResponse(['products' => $products], 'Products fetched successfully', 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error fetching products', 'error' => $e->getMessage()], 500);
+            return $this->jsonResponse(null, 'Error fetching products', 500);
         }
     }
 
@@ -47,9 +49,9 @@ class ProductController extends Controller
 
             $product = Product::create($validatedData);
 
-            return response()->json(['message' => 'Product added successfully', 'product' => $product], 201);
+            return $this->jsonResponse(['product' => $product], 'Product added successfully', 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error adding product', 'error' => $e->getMessage()], 500);
+            return $this->jsonResponse(null, 'Error adding product', 500);
         }
     }
 
@@ -59,12 +61,12 @@ class ProductController extends Controller
             $product = Product::find($productId);
 
             if ($product) {
-                return response()->json(['product' => $product], 200);
+                return $this->jsonResponse(['product' => $product], 'Product fetched successfully', 200);
             } else {
-                return response()->json(['message' => 'Product not found'], 404);
+                return $this->jsonResponse(null, 'Product not found', 404);
             }
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error fetching product', 'error' => $e->getMessage()], 500);
+            return $this->jsonResponse(null, 'Error fetching product', 500);
         }
     }
 
@@ -78,7 +80,7 @@ class ProductController extends Controller
                     'name' => 'required|string|max:255',
                     'price' => 'required|numeric',
                     'description' => 'required|string',
-                    'image' => 'nullable|string', // Update the validation rule for the image field
+                    'image' => 'nullable|string',
                 ]);
 
                 $product->name = $validatedData['name'];
@@ -90,23 +92,23 @@ class ProductController extends Controller
                     $imageData = substr($imageData, strpos($imageData, ',') + 1);
                     $imageData = str_replace(' ', '+', $imageData);
                     $decodedImage = base64_decode($imageData);
-                
+
                     $imageName = time() . '_' . Str::random(10) . '.png';
                     $destinationPath = public_path('images/' . $imageName);
-                
+
                     file_put_contents($destinationPath, $decodedImage);
-                
+
                     $product->image = $imageName;
                 }
 
                 $product->save();
 
-                return response()->json(['message' => 'Product updated successfully', 'product' => $product], 200);
+                return $this->jsonResponse(['product' => $product], 'Product updated successfully', 200);
             } else {
-                return response()->json(['message' => 'Product not found'], 404);
+                return $this->jsonResponse(null, 'Product not found', 404);
             }
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error updating product', 'error' => $e->getMessage()], 500);
+            return $this->jsonResponse(null, 'Error updating product', 500);
         }
     }
 
@@ -117,12 +119,12 @@ class ProductController extends Controller
 
             if ($product) {
                 $product->delete();
-                return response()->json(['message' => 'Product deleted successfully'], 200);
+                return $this->jsonResponse(null, 'Product deleted successfully', 200);
             } else {
-                return response()->json(['message' => 'Product not found'], 404);
+                return $this->jsonResponse(null, 'Product not found', 404);
             }
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error deleting product', 'error' => $e->getMessage()], 500);
+            return $this->jsonResponse(null, 'Error deleting product', 500);
         }
     }
 }
